@@ -6,8 +6,9 @@ An internal portal for restocking my family's grocery store. Staff create purcha
 suppliers, the owner approves them, and when the goods arrive the stock is added to
 [Lucky Mart](https://github.com/LuckySiagian/lucky-mart), the store's ordering platform.
 
-> **Status: work in progress.** Backend, frontend, CI and monitoring work end to end; the AWS
-> CDK infrastructure code is being written next.
+> **Status:** backend, frontend, CI and monitoring work end to end locally. The AWS
+> infrastructure is written with the CDK and tested in CI, but **not deployed** yet
+> ([infra/README.md](infra/README.md)).
 
 ## How it works
 
@@ -34,13 +35,13 @@ POST /inventory/adjust    ◀───────  add received stock (STOCK_IN
 
 | Part | Technology |
 | --- | --- |
-| Backend | Python 3.12, Django 5, Django REST Framework, Simple JWT |
+| Backend | Python 3.12, Django 5, Django REST Framework, Simple JWT, Amazon Cognito JWT verification |
 | Database | PostgreSQL 16 |
 | Monitoring | `/api/health/`, Prometheus metrics at `/metrics`, Grafana dashboard |
 | Tests | pytest, pytest-django, responses · Vitest, Testing Library |
 | Frontend | React 19 + TypeScript + Vite, TanStack Query, React Router, Tailwind CSS |
 | CI | GitHub Actions: lint, tests, build, Docker images |
-| Infrastructure | Docker Compose, nginx; AWS CDK *(planned, code only)* |
+| Infrastructure | Docker Compose, nginx · AWS CDK: VPC, ECS Fargate, RDS, S3 + CloudFront, Cognito, Secrets Manager |
 
 ## Run locally
 
@@ -89,6 +90,10 @@ To connect to Lucky Mart, run it on port 8080 and set `LUCKY_MART_PHONE_NUMBER` 
 ```bash
 docker compose run --rm backend pytest
 docker compose run --rm backend ruff check .
+
+cd infra
+npm run typecheck && npm test && npm run synth
+cd ..
 
 cd frontend
 npm run typecheck && npm run lint && npm test
