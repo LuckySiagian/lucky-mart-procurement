@@ -1,5 +1,7 @@
 # Lucky Mart Procurement Portal
 
+[![CI](https://github.com/LuckySiagian/lucky-mart-procurement/actions/workflows/ci.yml/badge.svg)](https://github.com/LuckySiagian/lucky-mart-procurement/actions/workflows/ci.yml)
+
 An internal portal for restocking my family's grocery store. Staff create purchase orders to
 suppliers, the owner approves them, and when the goods arrive the stock is added to
 [Lucky Mart](https://github.com/LuckySiagian/lucky-mart), the store's ordering platform.
