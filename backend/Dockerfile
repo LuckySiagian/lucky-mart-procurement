@@ -8,7 +8,10 @@ WORKDIR /app
 
 COPY requirements.txt requirements-dev.txt ./
 ARG INSTALL_DEV=false
-RUN if [ "$INSTALL_DEV" = "true" ]; then pip install -r requirements-dev.txt; \
+# Development images also get gettext so translations can be updated (makemessages).
+RUN if [ "$INSTALL_DEV" = "true" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends gettext \
+        && rm -rf /var/lib/apt/lists/* && pip install -r requirements-dev.txt; \
     else pip install -r requirements.txt; fi
 
 COPY . .

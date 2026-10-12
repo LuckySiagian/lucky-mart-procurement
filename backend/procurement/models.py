@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.db.models import F, Sum
+from django.utils.translation import gettext_lazy as _
 
 
 class Supplier(models.Model):
@@ -30,12 +31,12 @@ class PurchaseOrder(models.Model):
     """
 
     class Status(models.TextChoices):
-        DRAFT = "DRAFT", "Draft"
-        SUBMITTED = "SUBMITTED", "Waiting for approval"
-        APPROVED = "APPROVED", "Approved"
-        REJECTED = "REJECTED", "Rejected"
-        RECEIVED = "RECEIVED", "Received"
-        CANCELLED = "CANCELLED", "Cancelled"
+        DRAFT = "DRAFT", _("Draft")
+        SUBMITTED = "SUBMITTED", _("Waiting for approval")
+        APPROVED = "APPROVED", _("Approved")
+        REJECTED = "REJECTED", _("Rejected")
+        RECEIVED = "RECEIVED", _("Received")
+        CANCELLED = "CANCELLED", _("Cancelled")
 
     number = models.CharField(max_length=20, unique=True, editable=False)
     supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name="orders")

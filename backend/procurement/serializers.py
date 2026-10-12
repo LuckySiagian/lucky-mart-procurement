@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
 from .models import PurchaseOrder, PurchaseOrderEvent, PurchaseOrderItem, Supplier
@@ -42,12 +43,12 @@ class PurchaseOrderItemSerializer(serializers.ModelSerializer):
 
     def validate_quantity(self, value):
         if value < 1:
-            raise serializers.ValidationError("Quantity must be at least 1.")
+            raise serializers.ValidationError(_("Quantity must be at least 1."))
         return value
 
     def validate_unit_price(self, value):
         if value < 0:
-            raise serializers.ValidationError("Price cannot be negative.")
+            raise serializers.ValidationError(_("Price cannot be negative."))
         return value
 
 
@@ -110,12 +111,12 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
 
     def validate_supplier(self, supplier):
         if not supplier.is_active:
-            raise serializers.ValidationError("This supplier is inactive.")
+            raise serializers.ValidationError(_("This supplier is inactive."))
         return supplier
 
     def validate_items(self, items):
         if not items:
-            raise serializers.ValidationError("Add at least one item.")
+            raise serializers.ValidationError(_("Add at least one item."))
         return items
 
     @transaction.atomic

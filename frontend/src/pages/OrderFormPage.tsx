@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLowStock, useOrder, useSaveOrder, useSuppliers } from '../api/hooks'
 import type { LowStockItem, OrderItemInput, PurchaseOrder } from '../api/types'
 import { Button, Card, ErrorBox, Field, Input, PageHeader, Spinner, inputClass } from '../components/ui'
+import { useI18n } from '../i18n/useI18n'
 import { formatRupiah } from '../lib/format'
 import { itemFromLowStock } from '../lib/orderItems'
 
@@ -28,10 +29,12 @@ function itemsFromOrder(order: PurchaseOrder): OrderItemInput[] {
 }
 
 function LowStockPicker({ onPick, picked }: { onPick: (row: LowStockItem) => void; picked: Set<string> }) {
+  const { t } = useI18n()
   const { data, isLoading, error } = useLowStock()
-  if (isLoading) return <Spinner label="Loading low-stock products…" />
-  if (error) return <p className="text-sm text-slate-500">Low-stock list unavailable: {error.message}</p>
-  if (!data?.length) return <p className="text-sm text-slate-500">No products are low on stock.</p>
+  if (isLoading) return <Spinner label={t('form.loadingLowStock')} />
+  if (error)
+    return <p className="text-sm text-slate-500">{t('form.lowStockUnavailable', { error: error.message })}</p>
+  if (!data?.length) return <p className="text-sm text-slate-500">{t('form.noLowStock')}</p>
   return (
     <ul className="divide-y divide-slate-100 rounded-lg ring-1 ring-slate-200">
       {data.map((row) => (
@@ -39,11 +42,11 @@ function LowStockPicker({ onPick, picked }: { onPick: (row: LowStockItem) => voi
           <span>
             <span className="font-medium">{row.product_name}</span>{' '}
             <span className="text-slate-500">
-              ({row.current_stock} left, min {row.min_stock_alert})
+              {t('form.lowStockRow', { current: row.current_stock, min: row.min_stock_alert })}
             </span>
           </span>
           <Button variant="secondary" disabled={picked.has(row.product_unit_id)} onClick={() => onPick(row)}>
-            {picked.has(row.product_unit_id) ? 'Added' : 'Add'}
+            {picked.has(row.product_unit_id) ? t('form.added') : t('form.add')}
           </Button>
         </li>
       ))}
@@ -64,15 +67,16 @@ export default function OrderFormPage() {
   const orderId = id ? Number(id) : undefined
   const [params] = useSearchParams()
   const fromLowStock = !orderId && params.get('from') === 'low-stock'
+  const { t } = useI18n()
 
   const existing = useOrder(orderId)
   const lowStock = useLowStock()
 
   if (orderId) {
     if (existing.isLoading) return <Spinner />
-    if (existing.error || !existing.data) return <ErrorBox error={existing.error ?? new Error('Order not found.')} />
+    if (existing.error || !existing.data) return <ErrorBox error={existing.error ?? new Error(t('form.notFound'))} />
     if (existing.data.status !== 'DRAFT') {
-      return <ErrorBox error={new Error('Only draft orders can be edited.')} />
+      return <ErrorBox error={new Error(t('form.onlyDrafts'))} />
     }
     const order = existing.data
     return (
@@ -89,7 +93,7 @@ export default function OrderFormPage() {
   }
 
   // "Reorder" from the dashboard starts with every low-stock product.
-  if (fromLowStock && lowStock.isLoading) return <Spinner label="Loading low-stock products…" />
+  if (fromLowStock && lowStock.isLoading) return <Spinner label={t('form.loadingLowStock')} />
   const startItems = fromLowStock && lowStock.data?.length ? lowStock.data.map(itemFromLowStock) : [emptyItem()]
   return (
     <OrderForm
@@ -109,6 +113,7 @@ function OrderForm({
   showLowStock?: boolean
 }) {
   const navigate = useNavigate()
+  const { t } = useI18n()
   const suppliers = useSuppliers(true)
   const save = useSaveOrder(order?.id)
 
@@ -145,15 +150,15 @@ function OrderForm({
   return (
     <form onSubmit={handleSubmit}>
       <PageHeader
-        title={order ? `Edit ${order.number}` : 'New purchase order'}
-        subtitle="Saved as a draft. Submit it for the owner's approval when it's ready."
+        title={order ? t('form.editTitle', { number: order.number }) : t('form.newTitle')}
+        subtitle={t('form.subtitle')}
         actions={
           <>
             <Link to={order ? `/orders/${order.id}` : '/orders'}>
-              <Button variant="secondary">Cancel</Button>
+              <Button variant="secondary">{t('common.cancel')}</Button>
             </Link>
             <Button type="submit" disabled={save.isPending}>
-              {save.isPending ? 'Saving…' : 'Save draft'}
+              {save.isPending ? t('common.saving') : t('form.saveDraft')}
             </Button>
           </>
         }
@@ -163,14 +168,14 @@ function OrderForm({
         <ErrorBox error={save.error} />
 
         <Card className="grid gap-4 p-5 sm:grid-cols-3">
-          <Field label="Supplier">
+          <Field label={t('form.supplier')}>
             <select
               className={inputClass}
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
               required
             >
-              <option value="">Choose a supplier…</option>
+              <option value="">{t('form.chooseSupplier')}</option>
               {suppliers.data?.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -178,23 +183,23 @@ function OrderForm({
               ))}
             </select>
           </Field>
-          <Field label="Expected delivery" hint="Optional">
+          <Field label={t('form.expected')} hint={t('common.optional')}>
             <Input type="date" value={expectedDate} onChange={(e) => setExpectedDate(e.target.value)} />
           </Field>
-          <Field label="Notes" hint="Optional">
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. weekly restock" />
+          <Field label={t('form.notes')} hint={t('common.optional')}>
+            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={t('form.notesPlaceholder')} />
           </Field>
         </Card>
 
         <Card>
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-            <h2 className="font-semibold">Items</h2>
+            <h2 className="font-semibold">{t('form.items')}</h2>
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => setShowPicker((v) => !v)} aria-expanded={showPicker}>
-                {showPicker ? 'Hide low stock' : 'Add from low stock'}
+                {showPicker ? t('form.hideLowStock') : t('form.addFromLowStock')}
               </Button>
               <Button variant="secondary" onClick={() => setItems((c) => [...c, emptyItem()])}>
-                Add item
+                {t('form.addItem')}
               </Button>
             </div>
           </div>
@@ -208,15 +213,15 @@ function OrderForm({
           <div className="divide-y divide-slate-100">
             {items.map((item, index) => (
               <div key={index} className="grid gap-3 px-5 py-4 sm:grid-cols-[1fr_7rem_10rem_8rem_auto] sm:items-end">
-                <Field label="Product">
+                <Field label={t('form.product')}>
                   <Input
                     value={item.product_name}
                     onChange={(e) => updateItem(index, { product_name: e.target.value })}
-                    placeholder="e.g. Beras Premium 5kg"
+                    placeholder={t('form.productPlaceholder')}
                     required
                   />
                 </Field>
-                <Field label="Quantity">
+                <Field label={t('form.quantity')}>
                   <Input
                     type="number"
                     min={1}
@@ -225,7 +230,7 @@ function OrderForm({
                     required
                   />
                 </Field>
-                <Field label="Buying price (Rp)">
+                <Field label={t('form.price')}>
                   <Input
                     type="number"
                     min={0}
@@ -240,15 +245,15 @@ function OrderForm({
                 </div>
                 <Button
                   variant="ghost"
-                  aria-label={`Remove ${item.product_name || 'item'}`}
+                  aria-label={t('form.removeItem', { name: item.product_name || t('form.item') })}
                   disabled={items.length === 1}
                   onClick={() => setItems((c) => c.filter((_, i) => i !== index))}
                 >
-                  Remove
+                  {t('common.remove')}
                 </Button>
                 {item.lucky_mart_product_unit_id && (
                   <p className="text-xs text-emerald-700 sm:col-span-5">
-                    Linked to Lucky Mart{item.sku && ` (${item.sku})`}: stock is added automatically when received.
+                    {t('form.linked', { sku: item.sku ? ` (${item.sku})` : '' })}
                   </p>
                 )}
               </div>
@@ -256,7 +261,7 @@ function OrderForm({
           </div>
 
           <div className="flex justify-end border-t border-slate-100 px-5 py-4 text-sm">
-            <span className="text-slate-600">Total</span>
+            <span className="text-slate-600">{t('common.total')}</span>
             <span className="ml-4 font-bold tabular-nums">{formatRupiah(total)}</span>
           </div>
         </Card>

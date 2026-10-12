@@ -1,0 +1,109 @@
+# Indonesian translations for the Lucky Mart Procurement Portal.
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-12 11:39+0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: accounts/permissions.py:6
+msgid "Only the store owner can do this."
+msgstr "Hanya pemilik toko yang dapat melakukan ini."
+
+#: accounts/serializers.py:38
+msgid "Your current password is wrong."
+msgstr "Password Anda saat ini salah."
+
+#: accounts/serializers.py:44
+msgid "The new password must be different from the current one."
+msgstr "Password baru harus berbeda dari password saat ini."
+
+#: procurement/models.py:34
+msgid "Draft"
+msgstr "Draf"
+
+#: procurement/models.py:35
+msgid "Waiting for approval"
+msgstr "Menunggu persetujuan"
+
+#: procurement/models.py:36
+msgid "Approved"
+msgstr "Disetujui"
+
+#: procurement/models.py:37
+msgid "Rejected"
+msgstr "Ditolak"
+
+#: procurement/models.py:38
+msgid "Received"
+msgstr "Diterima"
+
+#: procurement/models.py:39
+msgid "Cancelled"
+msgstr "Dibatalkan"
+
+#: procurement/permissions.py:10
+msgid "Only drafts can be edited, by their creator or the owner."
+msgstr "Hanya draf yang dapat diubah, oleh pembuatnya atau pemilik toko."
+
+#: procurement/serializers.py:46
+msgid "Quantity must be at least 1."
+msgstr "Jumlah minimal 1."
+
+#: procurement/serializers.py:51
+msgid "Price cannot be negative."
+msgstr "Harga tidak boleh negatif."
+
+#: procurement/serializers.py:114
+msgid "This supplier is inactive."
+msgstr "Supplier ini tidak aktif."
+
+#: procurement/serializers.py:119
+msgid "Add at least one item."
+msgstr "Tambahkan minimal satu barang."
+
+#: procurement/workflow.py:33
+#, python-format
+msgid "Not allowed while the order is %(status)s."
+msgstr "Tidak diizinkan saat pesanan berstatus %(status)s."
+
+#: procurement/workflow.py:49
+msgid "Only the creator or the owner can submit this order."
+msgstr "Hanya pembuat atau pemilik toko yang dapat mengajukan pesanan ini."
+
+#: procurement/workflow.py:51
+msgid "Add at least one item before submitting."
+msgstr "Tambahkan minimal satu barang sebelum mengajukan."
+
+#: procurement/workflow.py:65
+msgid "You cannot approve an order you created."
+msgstr "Anda tidak dapat menyetujui pesanan yang Anda buat sendiri."
+
+#: procurement/workflow.py:77
+msgid "Please give a reason for rejecting the order."
+msgstr "Mohon isi alasan penolakan pesanan."
+
+#: procurement/workflow.py:93
+msgid "Only the creator or the owner can cancel this order."
+msgstr "Hanya pembuat atau pemilik toko yang dapat membatalkan pesanan ini."
+
+#: procurement/workflow.py:113
+#, python-format
+msgid "Unknown item ids: %(ids)s"
+msgstr "ID barang tidak dikenal: %(ids)s"
+
+#: procurement/workflow.py:119
+#, python-format
+msgid "%(product)s: received quantity must be 0-%(max)s."
+msgstr "%(product)s: jumlah diterima harus 0-%(max)s."
+
+#: procurement/workflow.py:139
+msgid "Only received orders can be synced."
+msgstr "Hanya pesanan yang sudah diterima yang dapat disinkronkan."

@@ -26,6 +26,9 @@ POST /inventory/adjust    ◀───────  add received stock (STOCK_IN
 - **Audit trail:** every status change records who did it and when.
 - **Safe stock sync:** a receipt is saved even if Lucky Mart is down. Failed lines can be retried,
   and lines already synced are never sent twice.
+- **English and Indonesian:** the UI has an EN/ID switch, and the API answers in the same
+  language (`Accept-Language` + Django translations), so error messages match the UI.
+- **Accounts:** every user can change their own password, checked by Django's password validators.
 
 ## Tech stack
 
@@ -97,6 +100,7 @@ npm run typecheck && npm run lint && npm test
 | --- | --- | --- |
 | POST | `/api/auth/login/` | everyone |
 | GET | `/api/auth/me/` | signed in |
+| POST | `/api/auth/change-password/` | signed in |
 | GET/POST | `/api/suppliers/` | signed in |
 | GET/POST | `/api/purchase-orders/` | signed in |
 | POST | `/api/purchase-orders/{id}/submit/` | creator |

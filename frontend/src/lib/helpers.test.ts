@@ -55,3 +55,12 @@ describe('itemFromLowStock', () => {
     expect(itemFromLowStock({ ...row, current_stock: 50 }).quantity).toBe(1)
   })
 })
+
+describe('describeError with field labels', () => {
+  it('translates field names but keeps the backend message', () => {
+    const labels: Record<string, string> = { supplier: 'Pemasok' }
+    expect(describeError({ supplier: ['Supplier ini tidak aktif.'] }, (f) => labels[f] ?? f)).toBe(
+      'Pemasok: Supplier ini tidak aktif.',
+    )
+  })
+})

@@ -1,10 +1,13 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { ApiError } from '../api/client'
 import { useAuth } from '../auth/useAuth'
-import { Button, ErrorBox, Field, Input } from '../components/ui'
+import { Button, ErrorBox, Field, Input, LanguageSwitcher } from '../components/ui'
+import { useI18n } from '../i18n/useI18n'
 
 export default function LoginPage() {
   const { login } = useAuth()
+  const { t } = useI18n()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<unknown>(null)
@@ -17,7 +20,7 @@ export default function LoginPage() {
     try {
       await login(username.trim(), password)
     } catch (err) {
-      setError(err)
+      setError(err instanceof ApiError && err.status === 401 ? new Error(t('login.wrong')) : err)
     } finally {
       setBusy(false)
     }
@@ -26,10 +29,13 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
+        <div className="mb-4 flex justify-end">
+          <LanguageSwitcher />
+        </div>
         <div className="mb-8 text-center">
           <img src="/favicon.svg" alt="" className="mx-auto h-12 w-12" />
-          <h1 className="mt-4 text-2xl font-bold text-slate-900">Lucky Mart Procurement</h1>
-          <p className="mt-1 text-sm text-slate-600">Sign in to manage purchase orders.</p>
+          <h1 className="mt-4 text-2xl font-bold text-slate-900">{t('app.name')}</h1>
+          <p className="mt-1 text-sm text-slate-600">{t('login.subtitle')}</p>
         </div>
 
         <form
@@ -37,7 +43,7 @@ export default function LoginPage() {
           className="space-y-4 rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200"
         >
           <ErrorBox error={error} />
-          <Field label="Username">
+          <Field label={t('login.username')}>
             <Input
               autoComplete="username"
               value={username}
@@ -46,7 +52,7 @@ export default function LoginPage() {
               autoFocus
             />
           </Field>
-          <Field label="Password">
+          <Field label={t('login.password')}>
             <Input
               type="password"
               autoComplete="current-password"
@@ -56,7 +62,7 @@ export default function LoginPage() {
             />
           </Field>
           <Button type="submit" className="w-full" disabled={busy}>
-            {busy ? 'Signing in…' : 'Sign in'}
+            {busy ? t('login.submitting') : t('login.submit')}
           </Button>
         </form>
       </div>

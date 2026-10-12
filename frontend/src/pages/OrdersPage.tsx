@@ -3,12 +3,14 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useOrders } from '../api/hooks'
 import type { OrderStatus } from '../api/types'
 import { Button, Card, EmptyState, ErrorBox, Input, PageHeader, Spinner, StatusBadge } from '../components/ui'
-import { formatDate, formatRupiah, STATUS_LABEL } from '../lib/format'
+import { useI18n } from '../i18n/useI18n'
+import { formatDate, formatRupiah } from '../lib/format'
 
 const FILTERS: (OrderStatus | '')[] = ['', 'DRAFT', 'SUBMITTED', 'APPROVED', 'RECEIVED', 'REJECTED', 'CANCELLED']
 
 export default function OrdersPage() {
   const navigate = useNavigate()
+  const { t, locale } = useI18n()
   const [params, setParams] = useSearchParams()
   const status = (params.get('status') ?? '') as OrderStatus | ''
   const page = Number(params.get('page') ?? '1')
@@ -43,17 +45,17 @@ export default function OrdersPage() {
   return (
     <>
       <PageHeader
-        title="Purchase orders"
-        subtitle="Orders to suppliers, from draft to received."
+        title={t('orders.title')}
+        subtitle={t('orders.subtitle')}
         actions={
           <Link to="/orders/new">
-            <Button>New purchase order</Button>
+            <Button>{t('dashboard.newOrder')}</Button>
           </Link>
         }
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex flex-wrap gap-1" role="group" aria-label="Filter by status">
+        <div className="flex flex-wrap gap-1" role="group" aria-label={t('orders.filterByStatus')}>
           {FILTERS.map((value) => (
             <button
               key={value || 'all'}
@@ -66,14 +68,14 @@ export default function OrdersPage() {
                   : 'bg-white text-slate-700 ring-slate-300 hover:bg-slate-50'
               }`}
             >
-              {value ? STATUS_LABEL[value] : 'All'}
+              {value ? t(`status.${value}`) : t('orders.all')}
             </button>
           ))}
         </div>
         <Input
           type="search"
-          placeholder="Search number or supplier…"
-          aria-label="Search orders"
+          placeholder={t('orders.search')}
+          aria-label={t('orders.searchLabel')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="sm:ml-auto sm:max-w-xs"
@@ -85,19 +87,19 @@ export default function OrdersPage() {
         {isLoading ? (
           <Spinner />
         ) : !data?.results.length ? (
-          <EmptyState title="No purchase orders found.">
-            {status || search ? 'Try another filter.' : 'Create the first one to restock the store.'}
+          <EmptyState title={t('orders.empty')}>
+            {status || search ? t('orders.emptyFiltered') : t('orders.emptyFirst')}
           </EmptyState>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-slate-200 text-xs tracking-wide text-slate-500 uppercase">
                 <tr>
-                  <th className="px-5 py-3 font-semibold">Number</th>
-                  <th className="px-5 py-3 font-semibold">Supplier</th>
-                  <th className="px-5 py-3 font-semibold">Status</th>
-                  <th className="px-5 py-3 text-right font-semibold">Total</th>
-                  <th className="px-5 py-3 font-semibold">Created</th>
+                  <th className="px-5 py-3 font-semibold">{t('orders.col.number')}</th>
+                  <th className="px-5 py-3 font-semibold">{t('orders.col.supplier')}</th>
+                  <th className="px-5 py-3 font-semibold">{t('orders.col.status')}</th>
+                  <th className="px-5 py-3 text-right font-semibold">{t('orders.col.total')}</th>
+                  <th className="px-5 py-3 font-semibold">{t('orders.col.created')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -120,7 +122,7 @@ export default function OrdersPage() {
                       {formatRupiah(order.total_amount)}
                     </td>
                     <td className="px-5 py-3 whitespace-nowrap text-slate-600">
-                      {formatDate(order.created_at)} · {order.created_by}
+                      {formatDate(order.created_at, locale)} · {order.created_by}
                     </td>
                   </tr>
                 ))}
@@ -132,13 +134,13 @@ export default function OrdersPage() {
 
       {data && (data.next || data.previous) && (
         <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
-          <span>{data.count} orders</span>
+          <span>{t('orders.count', { count: data.count })}</span>
           <div className="flex gap-2">
             <Button variant="secondary" disabled={!data.previous} onClick={() => update('page', String(page - 1))}>
-              Previous
+              {t('common.previous')}
             </Button>
             <Button variant="secondary" disabled={!data.next} onClick={() => update('page', String(page + 1))}>
-              Next
+              {t('common.next')}
             </Button>
           </div>
         </div>

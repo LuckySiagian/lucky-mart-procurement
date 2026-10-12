@@ -113,3 +113,10 @@ export function useOrderAction(id: number) {
     post<PurchaseOrder>(`/purchase-orders/${id}/${action}/`, body ?? {}),
   )
 }
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: (body: { current_password: string; new_password: string }) =>
+      post<null>('/auth/change-password/', body),
+  })
+}

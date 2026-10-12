@@ -3,6 +3,7 @@ import { ApiError } from '../api/client'
 import { useDashboard, useLowStock } from '../api/hooks'
 import { useAuth } from '../auth/useAuth'
 import { Button, Card, EmptyState, ErrorBox, PageHeader, Spinner } from '../components/ui'
+import { useI18n } from '../i18n/useI18n'
 import { formatRupiah } from '../lib/format'
 
 function Stat({ label, value, to }: { label: string; value: string | number; to?: string }) {
@@ -26,23 +27,20 @@ function Stat({ label, value, to }: { label: string; value: string | number; to?
 }
 
 function LowStockCard() {
+  const { t } = useI18n()
   const { data, isLoading, error } = useLowStock()
 
   let content
-  if (isLoading) content = <Spinner label="Checking Lucky Mart stock…" />
+  if (isLoading) content = <Spinner label={t('dashboard.checkingStock')} />
   else if (error instanceof ApiError && error.status === 503)
-    content = (
-      <EmptyState title="Lucky Mart is not connected">
-        Set the Lucky Mart service account in <code>.env</code> to see low-stock products here.
-      </EmptyState>
-    )
+    content = <EmptyState title={t('dashboard.notConnected')}>{t('dashboard.notConnectedHelp')}</EmptyState>
   else if (error)
     content = (
       <div className="p-5">
         <ErrorBox error={error} />
       </div>
     )
-  else if (!data?.length) content = <EmptyState title="All products are above their minimum stock." />
+  else if (!data?.length) content = <EmptyState title={t('dashboard.allStocked')} />
   else
     content = (
       <ul className="divide-y divide-slate-100">
@@ -55,8 +53,8 @@ function LowStockCard() {
               </div>
             </div>
             <div className="text-right">
-              <div className="font-semibold text-rose-700">{item.current_stock} left</div>
-              <div className="text-xs text-slate-500">min {item.min_stock_alert}</div>
+              <div className="font-semibold text-rose-700">{t('dashboard.left', { count: item.current_stock })}</div>
+              <div className="text-xs text-slate-500">{t('dashboard.min', { count: item.min_stock_alert })}</div>
             </div>
           </li>
         ))}
@@ -66,10 +64,10 @@ function LowStockCard() {
   return (
     <Card>
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-        <h2 className="font-semibold text-slate-900">Low stock in Lucky Mart</h2>
+        <h2 className="font-semibold text-slate-900">{t('dashboard.lowStock')}</h2>
         {!!data?.length && (
           <Link to="/orders/new?from=low-stock" className="text-sm font-semibold text-emerald-700 hover:underline">
-            Reorder →
+            {t('dashboard.reorder')}
           </Link>
         )}
       </div>
@@ -80,16 +78,17 @@ function LowStockCard() {
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const { t } = useI18n()
   const { data, isLoading, error } = useDashboard()
 
   return (
     <>
       <PageHeader
-        title={`Hello, ${user?.full_name}`}
-        subtitle="Restocking overview for the store."
+        title={t('dashboard.hello', { name: user?.full_name ?? '' })}
+        subtitle={t('dashboard.subtitle')}
         actions={
           <Link to="/orders/new">
-            <Button>New purchase order</Button>
+            <Button>{t('dashboard.newOrder')}</Button>
           </Link>
         }
       />
@@ -98,11 +97,15 @@ export default function DashboardPage() {
       {isLoading && <Spinner />}
       {data && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Waiting for approval" value={data.waiting_for_approval} to="/orders?status=SUBMITTED" />
-          <Stat label="Approved, not received" value={data.orders_by_status.APPROVED} to="/orders?status=APPROVED" />
-          <Stat label="Received this month" value={formatRupiah(data.received_this_month)} />
+          <Stat label={t('dashboard.waiting')} value={data.waiting_for_approval} to="/orders?status=SUBMITTED" />
           <Stat
-            label="Failed stock syncs"
+            label={t('dashboard.approvedNotReceived')}
+            value={data.orders_by_status.APPROVED}
+            to="/orders?status=APPROVED"
+          />
+          <Stat label={t('dashboard.receivedThisMonth')} value={formatRupiah(data.received_this_month)} />
+          <Stat
+            label={t('dashboard.failedSyncs')}
             value={data.failed_stock_syncs}
             to={data.failed_stock_syncs ? '/orders?status=RECEIVED' : undefined}
           />

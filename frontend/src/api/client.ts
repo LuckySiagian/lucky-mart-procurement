@@ -12,22 +12,32 @@ export class ApiError extends Error {
   }
 }
 
-/** Turns DRF error bodies ({detail}, {field: [msgs]}, ...) into one readable sentence. */
-export function describeError(data: unknown): string {
+/**
+ * Turns DRF error bodies ({detail}, {field: [msgs]}, ...) into one readable sentence.
+ * The backend already translates the messages; fieldLabel translates the field names.
+ */
+export function describeError(data: unknown, fieldLabel: (field: string) => string = (f) => f): string {
+  const describe = (value: unknown): string => describeError(value, fieldLabel)
   if (!data) return ''
   if (typeof data === 'string') return data
-  if (Array.isArray(data)) return data.map(describeError).filter(Boolean).join(' ')
+  if (Array.isArray(data)) return data.map(describe).filter(Boolean).join(' ')
   if (typeof data === 'object') {
     const record = data as Record<string, unknown>
-    if ('detail' in record) return describeError(record.detail)
+    if ('detail' in record) return describe(record.detail)
     return Object.entries(record)
       .map(([field, value]) => {
-        const text = describeError(value)
-        return field === 'non_field_errors' ? text : `${field}: ${text}`
+        const text = describe(value)
+        return field === 'non_field_errors' ? text : `${fieldLabel(field)}: ${text}`
       })
       .join(' ')
   }
   return String(data)
+}
+
+let language = 'en'
+/** The UI language, sent as Accept-Language so Django answers in the same language. */
+export function setApiLanguage(lang: string) {
+  language = lang
 }
 
 export const tokens = {
@@ -61,7 +71,7 @@ async function refreshAccessToken(): Promise<boolean> {
   // Several requests may fail at once; they all wait for the same refresh call.
   refreshing ??= fetch('/api/auth/refresh/', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept-Language': language },
     body: JSON.stringify({ refresh }),
   })
     .then(async (resp) => {
@@ -90,6 +100,7 @@ async function parseBody(resp: Response): Promise<unknown> {
 
 export async function api<T>(path: string, options: RequestInit = {}, retry = true): Promise<T> {
   const headers = new Headers(options.headers)
+  headers.set('Accept-Language', language)
   if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   if (tokens.access) headers.set('Authorization', `Bearer ${tokens.access}`)
 

@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
-import { api, ApiError, setSessionExpiredHandler, tokens } from '../api/client'
+import { api, setSessionExpiredHandler, tokens } from '../api/client'
 import type { User } from '../api/types'
 import { AuthContext } from './useAuth'
 
@@ -25,20 +25,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false))
   }, [logout])
 
+  // A 401 from login means wrong credentials; the login page shows the translated message.
   const login = useCallback(async (username: string, password: string) => {
-    try {
-      const data = await api<{ access: string; refresh: string }>(
-        '/auth/login/',
-        { method: 'POST', body: JSON.stringify({ username, password }) },
-        false,
-      )
-      tokens.save(data.access, data.refresh)
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 401) {
-        throw new Error('Wrong username or password.')
-      }
-      throw error
-    }
+    const data = await api<{ access: string; refresh: string }>(
+      '/auth/login/',
+      { method: 'POST', body: JSON.stringify({ username, password }) },
+      false,
+    )
+    tokens.save(data.access, data.refresh)
     setUser(await api<User>('/auth/me/'))
   }, [])
 

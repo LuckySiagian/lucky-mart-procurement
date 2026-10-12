@@ -1,3 +1,4 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework.permissions import SAFE_METHODS, BasePermission
 
 from .models import PurchaseOrder
@@ -6,7 +7,7 @@ from .models import PurchaseOrder
 class CanEditOrder(BasePermission):
     """Orders can only be edited while they are drafts, by their creator or the owner."""
 
-    message = "Only drafts can be edited, by their creator or the owner."
+    message = _("Only drafts can be edited, by their creator or the owner.")
 
     def has_object_permission(self, request, view, order):
         if request.method in SAFE_METHODS:

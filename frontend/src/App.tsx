@@ -2,6 +2,8 @@ import { Link, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth/useAuth'
 import Layout from './components/Layout'
 import { Spinner } from './components/ui'
+import { useI18n } from './i18n/useI18n'
+import AccountPage from './pages/AccountPage'
 import DashboardPage from './pages/DashboardPage'
 import LoginPage from './pages/LoginPage'
 import OrderDetailPage from './pages/OrderDetailPage'
@@ -10,11 +12,12 @@ import OrdersPage from './pages/OrdersPage'
 import SuppliersPage from './pages/SuppliersPage'
 
 function NotFound() {
+  const { t } = useI18n()
   return (
     <div className="py-16 text-center">
-      <p className="text-lg font-semibold">Page not found.</p>
+      <p className="text-lg font-semibold">{t('notFound.title')}</p>
       <Link to="/" className="mt-2 inline-block text-emerald-700 hover:underline">
-        Back to the dashboard
+        {t('notFound.back')}
       </Link>
     </div>
   )
@@ -41,6 +44,7 @@ export default function App() {
         <Route path="orders/:id" element={<OrderDetailPage />} />
         <Route path="orders/:id/edit" element={<OrderFormPage />} />
         <Route path="suppliers" element={<SuppliersPage />} />
+        <Route path="account" element={<AccountPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

@@ -9,6 +9,7 @@ import logging
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from . import luckymart
@@ -28,7 +29,10 @@ def _lock(order):
 def _require_status(order, *allowed):
     if order.status not in allowed:
         raise ValidationError(
-            {"status": f"Not allowed while the order is {order.get_status_display().lower()}."}
+            {
+                "status": _("Not allowed while the order is %(status)s.")
+                % {"status": order.get_status_display().lower()}
+            }
         )
 
 
@@ -42,9 +46,9 @@ def submit(order, user):
     order = _lock(order)
     _require_status(order, Status.DRAFT)
     if order.created_by_id != user.id and not user.is_owner:
-        raise PermissionDenied("Only the creator or the owner can submit this order.")
+        raise PermissionDenied(_("Only the creator or the owner can submit this order."))
     if not order.items.exists():
-        raise ValidationError({"items": "Add at least one item before submitting."})
+        raise ValidationError({"items": _("Add at least one item before submitting.")})
     order.status = Status.SUBMITTED
     order.submitted_at = timezone.now()
     order.save(update_fields=["status", "submitted_at", "updated_at"])
@@ -58,7 +62,7 @@ def approve(order, user, note=""):
     _require_status(order, Status.SUBMITTED)
     if order.created_by_id == user.id:
         # Segregation of duties: nobody approves their own order.
-        raise PermissionDenied("You cannot approve an order you created.")
+        raise PermissionDenied(_("You cannot approve an order you created."))
     order.status = Status.APPROVED
     order.approved_by = user
     order.decided_at = timezone.now()
@@ -70,7 +74,7 @@ def approve(order, user, note=""):
 @transaction.atomic
 def reject(order, user, reason):
     if not reason.strip():
-        raise ValidationError({"reason": "Please give a reason for rejecting the order."})
+        raise ValidationError({"reason": _("Please give a reason for rejecting the order.")})
     order = _lock(order)
     _require_status(order, Status.SUBMITTED)
     order.status = Status.REJECTED
@@ -86,7 +90,7 @@ def cancel(order, user, reason=""):
     order = _lock(order)
     _require_status(order, Status.DRAFT, Status.SUBMITTED)
     if order.created_by_id != user.id and not user.is_owner:
-        raise PermissionDenied("Only the creator or the owner can cancel this order.")
+        raise PermissionDenied(_("Only the creator or the owner can cancel this order."))
     order.status = Status.CANCELLED
     order.save(update_fields=["status", "updated_at"])
     _record(order, user, "CANCELLED", reason)
@@ -106,12 +110,17 @@ def receive(order, user, received=None, note=""):
         items = list(order.items.all())
         unknown = set(received) - {item.id for item in items}
         if unknown:
-            raise ValidationError({"items": f"Unknown item ids: {sorted(unknown)}"})
+            raise ValidationError(
+                {"items": _("Unknown item ids: %(ids)s") % {"ids": sorted(unknown)}}
+            )
         for item in items:
             qty = received.get(item.id, item.quantity)
             if qty < 0 or qty > item.quantity:
                 raise ValidationError(
-                    {"items": f"{item.product_name}: received quantity must be 0-{item.quantity}."}
+                    {
+                        "items": _("%(product)s: received quantity must be 0-%(max)s.")
+                        % {"product": item.product_name, "max": item.quantity}
+                    }
                 )
             item.received_quantity = qty
             item.save(update_fields=["received_quantity"])
@@ -129,7 +138,7 @@ def receive(order, user, received=None, note=""):
 def sync_stock(order, user=None):
     """Send received quantities to Lucky Mart for every line not synced yet."""
     if order.status != Status.RECEIVED:
-        raise ValidationError({"status": "Only received orders can be synced."})
+        raise ValidationError({"status": _("Only received orders can be synced.")})
 
     pending = order.items.exclude(sync_status__in=[SyncStatus.SYNCED, SyncStatus.SKIPPED])
     # Lines that aren't linked to a Lucky Mart product (or arrived empty) have nothing to send.
