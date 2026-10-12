@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "config.middleware.HealthCheckMiddleware",
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -143,6 +144,8 @@ CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS", "http://localhost:5174")
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        # Cognito first: it ignores tokens it didn't issue, so local logins still work.
+        "accounts.cognito.CognitoAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -160,6 +163,13 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(env("JWT_ACCESS_MINUTES", "30"))),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=int(env("JWT_REFRESH_DAYS", "7"))),
     "UPDATE_LAST_LOGIN": True,
+}
+
+# Amazon Cognito (set on AWS by the CDK stack). Empty USER_POOL_ID = Cognito disabled.
+COGNITO = {
+    "REGION": env("COGNITO_REGION", "ap-southeast-3"),
+    "USER_POOL_ID": env("COGNITO_USER_POOL_ID", ""),
+    "APP_CLIENT_ID": env("COGNITO_APP_CLIENT_ID", ""),
 }
 
 # Lucky Mart integration. Leave LUCKY_MART_API_URL empty to run the portal on its own.

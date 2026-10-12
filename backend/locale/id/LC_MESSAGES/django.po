@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-10-12 11:39+0700\n"
+"POT-Creation-Date: 2026-10-12 12:02+0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -12,6 +12,14 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
+
+#: accounts/cognito.py:63 accounts/cognito.py:70
+msgid "Invalid or expired token."
+msgstr "Token tidak valid atau sudah kedaluwarsa."
+
+#: accounts/cognito.py:84
+msgid "This account is disabled."
+msgstr "Akun ini dinonaktifkan."
 
 #: accounts/permissions.py:6
 msgid "Only the store owner can do this."
@@ -94,16 +102,16 @@ msgstr "Mohon isi alasan penolakan pesanan."
 msgid "Only the creator or the owner can cancel this order."
 msgstr "Hanya pembuat atau pemilik toko yang dapat membatalkan pesanan ini."
 
-#: procurement/workflow.py:113
+#: procurement/workflow.py:114
 #, python-format
 msgid "Unknown item ids: %(ids)s"
 msgstr "ID barang tidak dikenal: %(ids)s"
 
-#: procurement/workflow.py:119
+#: procurement/workflow.py:121
 #, python-format
 msgid "%(product)s: received quantity must be 0-%(max)s."
 msgstr "%(product)s: jumlah diterima harus 0-%(max)s."
 
-#: procurement/workflow.py:139
+#: procurement/workflow.py:141
 msgid "Only received orders can be synced."
 msgstr "Hanya pesanan yang sudah diterima yang dapat disinkronkan."
