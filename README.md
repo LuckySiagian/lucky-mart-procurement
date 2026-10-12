@@ -54,7 +54,7 @@ npm install
 npm run dev
 ```
 
-- App: http://localhost:5173 (users `owner` and `staff`, password from `DEMO_PASSWORD`)
+- App: http://localhost:5174 (users `owner` and `staff`, password from `DEMO_PASSWORD`)
 - API health: http://localhost:8000/api/health/
 - Django admin: http://localhost:8000/admin (user `owner`)
 

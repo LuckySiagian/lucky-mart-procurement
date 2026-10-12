@@ -6,7 +6,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
-    port: 5173,
+    port: 5174,
     // The Django API runs on :8000; proxying keeps the browser on one origin in development.
     proxy: {
       '/api': 'http://localhost:8000',
