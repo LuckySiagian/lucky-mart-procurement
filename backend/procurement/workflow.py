@@ -7,6 +7,7 @@ who may do what, in which status, and what gets written to the audit trail.
 import logging
 
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
@@ -40,6 +41,8 @@ def _record(order, user, action, note=""):
 def submit(order, user):
     order = _lock(order)
     _require_status(order, Status.DRAFT)
+    if order.created_by_id != user.id and not user.is_owner:
+        raise PermissionDenied("Only the creator or the owner can submit this order.")
     if not order.items.exists():
         raise ValidationError({"items": "Add at least one item before submitting."})
     order.status = Status.SUBMITTED
@@ -129,6 +132,14 @@ def sync_stock(order, user=None):
         raise ValidationError({"status": "Only received orders can be synced."})
 
     pending = order.items.exclude(sync_status__in=[SyncStatus.SYNCED, SyncStatus.SKIPPED])
+    # Lines that aren't linked to a Lucky Mart product (or arrived empty) have nothing to send.
+    pending.filter(Q(lucky_mart_product_unit_id__isnull=True) | Q(received_quantity=0)).update(
+        sync_status=SyncStatus.SKIPPED, sync_error=""
+    )
+    pending = pending.exclude(sync_status=SyncStatus.SKIPPED)
+    if not pending.exists():
+        return order
+
     try:
         client = luckymart.get_client()
     except luckymart.LuckyMartNotConfigured as exc:
@@ -138,22 +149,19 @@ def sync_stock(order, user=None):
 
     synced = failed = 0
     for item in pending:
-        if not item.lucky_mart_product_unit_id or not item.received_quantity:
-            item.sync_status, item.sync_error = SyncStatus.SKIPPED, ""
-        else:
-            try:
-                client.add_stock(
-                    item.lucky_mart_product_unit_id,
-                    item.received_quantity,
-                    reference=order.number,
-                    notes=f"Received from {order.supplier.name} ({order.number})",
-                )
-                item.sync_status, item.sync_error = SyncStatus.SYNCED, ""
-                synced += 1
-            except luckymart.LuckyMartError as exc:
-                logger.warning("Stock sync failed for %s item %s: %s", order.number, item.id, exc)
-                item.sync_status, item.sync_error = SyncStatus.FAILED, str(exc)
-                failed += 1
+        try:
+            client.add_stock(
+                item.lucky_mart_product_unit_id,
+                item.received_quantity,
+                reference=order.number,
+                notes=f"Received from {order.supplier.name} ({order.number})",
+            )
+            item.sync_status, item.sync_error = SyncStatus.SYNCED, ""
+            synced += 1
+        except luckymart.LuckyMartError as exc:
+            logger.warning("Stock sync failed for %s item %s: %s", order.number, item.id, exc)
+            item.sync_status, item.sync_error = SyncStatus.FAILED, str(exc)
+            failed += 1
         item.save(update_fields=["sync_status", "sync_error"])
 
     if synced:

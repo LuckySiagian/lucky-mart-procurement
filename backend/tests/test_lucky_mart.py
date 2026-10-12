@@ -134,3 +134,30 @@ def test_low_stock_when_not_configured(staff_api, settings):
     settings.LUCKY_MART = {**settings.LUCKY_MART, "API_URL": ""}
     resp = staff_api.get("/api/lucky-mart/low-stock/")
     assert resp.status_code == 503
+
+
+def test_unlinked_items_are_skipped_even_without_lucky_mart(
+    create_order, staff_api, owner_api, supplier, settings
+):
+    settings.LUCKY_MART = {**settings.LUCKY_MART, "API_URL": ""}
+    order = create_order(
+        items=[{"product_name": "Telur 1 tray", "quantity": 3, "unit_price": "52000"}]
+    )
+    staff_api.post(f"/api/purchase-orders/{order['id']}/submit/")
+    owner_api.post(f"/api/purchase-orders/{order['id']}/approve/")
+
+    resp = staff_api.post(f"/api/purchase-orders/{order['id']}/receive/", {}, format="json")
+
+    assert resp.data["items"][0]["sync_status"] == "SKIPPED"
+
+
+def test_linked_items_fail_when_lucky_mart_is_not_configured(
+    create_order, staff_api, owner_api, settings
+):
+    settings.LUCKY_MART = {**settings.LUCKY_MART, "API_URL": ""}
+    order = approved_order(create_order, staff_api, owner_api)
+
+    resp = staff_api.post(f"/api/purchase-orders/{order['id']}/receive/", {}, format="json")
+
+    statuses = {i["product_name"]: i["sync_status"] for i in resp.data["items"]}
+    assert statuses == {"Beras Premium 5kg": "FAILED", "Minyak Goreng 2L": "SKIPPED"}

@@ -133,3 +133,15 @@ def test_filter_by_status(staff_api, create_order):
 
 def test_requires_authentication(client, db):
     assert client.get("/api/purchase-orders/").status_code == 401
+
+
+def test_other_staff_cannot_submit_someone_elses_draft(other_staff_api, create_order):
+    order = create_order()
+    resp = other_staff_api.post(f"/api/purchase-orders/{order['id']}/submit/")
+    assert resp.status_code == 403
+
+
+def test_page_size_param(staff_api, supplier):
+    resp = staff_api.get("/api/suppliers/?page_size=100")
+    assert resp.status_code == 200
+    assert resp.data["count"] == 1

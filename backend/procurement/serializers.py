@@ -66,6 +66,7 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
     items = PurchaseOrderItemSerializer(many=True)
     supplier_name = serializers.CharField(source="supplier.name", read_only=True)
     created_by = serializers.StringRelatedField(read_only=True)
+    created_by_id = serializers.IntegerField(read_only=True)
     approved_by = serializers.StringRelatedField(read_only=True)
     total_amount = serializers.SerializerMethodField()
 
@@ -82,6 +83,7 @@ class PurchaseOrderSerializer(serializers.ModelSerializer):
             "items",
             "total_amount",
             "created_by",
+            "created_by_id",
             "approved_by",
             "rejection_reason",
             "created_at",
