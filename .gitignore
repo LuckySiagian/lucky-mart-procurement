@@ -1,0 +1,28 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+db.sqlite3
+backend/staticfiles/
+
+# Node
+node_modules/
+dist/
+coverage/
+
+# AWS CDK
+cdk.out/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
