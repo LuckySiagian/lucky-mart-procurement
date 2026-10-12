@@ -33,7 +33,9 @@ class Command(BaseCommand):
             )
             if created:
                 user.set_password(password)
-                user.save()
+            # The owner also manages the portal, so they can use the Django admin.
+            user.is_staff = user.is_superuser = role == User.Role.OWNER
+            user.save()
             self.stdout.write(f"{'Created' if created else 'Exists '} user {username} ({role})")
 
         for data in SUPPLIERS:
