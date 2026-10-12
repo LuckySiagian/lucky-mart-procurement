@@ -10,17 +10,40 @@ suppliers, the owner approves them, and when the goods arrive the stock is added
 > infrastructure is written with the CDK and tested in CI, but **not deployed** yet
 > ([infra/README.md](infra/README.md)).
 
+![Purchase orders](docs/screenshots/orders.png)
+
 ## How it works
 
+```mermaid
+stateDiagram-v2
+    [*] --> DRAFT: staff creates order<br/>(items suggested from Lucky Mart low stock)
+    DRAFT --> SUBMITTED: submit
+    DRAFT --> CANCELLED: cancel
+    SUBMITTED --> APPROVED: owner approves
+    SUBMITTED --> REJECTED: owner rejects (reason required)
+    SUBMITTED --> CANCELLED: cancel
+    APPROVED --> RECEIVED: goods arrive<br/>→ stock added in Lucky Mart
+    REJECTED --> [*]
+    RECEIVED --> [*]
+    CANCELLED --> [*]
 ```
-Lucky Mart (Go)                     Procurement Portal (Django)
-─────────────────                   ───────────────────────────
-GET /inventory/low-stock  ───────▶  suggest what to reorder
-                                    Staff: create purchase order (DRAFT)
-                                    Staff: submit           (SUBMITTED)
-                                    Owner: approve / reject (APPROVED / REJECTED)
-                                    Staff: receive goods    (RECEIVED)
-POST /inventory/adjust    ◀───────  add received stock (STOCK_IN)
+
+```mermaid
+sequenceDiagram
+    participant Staff
+    participant Portal as Procurement Portal (Django)
+    participant LM as Lucky Mart API (Go)
+    Staff->>Portal: open new purchase order
+    Portal->>LM: GET /api/v1/inventory/low-stock
+    LM-->>Portal: products below their minimum
+    Portal-->>Staff: suggested items and quantities
+    Note over Staff,Portal: submit → owner approves → goods arrive
+    Staff->>Portal: receive goods (quantities per line)
+    Portal->>Portal: save receipt and audit event (one transaction)
+    loop each line linked to a Lucky Mart product
+        Portal->>LM: POST /api/v1/inventory/adjust (STOCK_IN)
+        LM-->>Portal: ok, or error → line marked FAILED, retry later
+    end
 ```
 
 - **Roles:** staff prepare and receive orders; only the owner approves, and never their own order.
@@ -30,6 +53,77 @@ POST /inventory/adjust    ◀───────  add received stock (STOCK_IN
 - **English and Indonesian:** the UI has an EN/ID switch, and the API answers in the same
   language (`Accept-Language` + Django translations), so error messages match the UI.
 - **Accounts:** every user can change their own password, checked by Django's password validators.
+
+## Screenshots
+
+| | |
+| --- | --- |
+| ![Dashboard](docs/screenshots/dashboard.png) | ![New purchase order](docs/screenshots/order-new.png) |
+| **Dashboard** with what needs attention | **Staff** create an order, or add items from Lucky Mart's low-stock list |
+| ![Owner approval](docs/screenshots/order-approve.png) | ![Received order](docs/screenshots/order-received.png) |
+| **Owner** approves or rejects a submitted order | A received order with its history (audit trail) |
+| ![Indonesian](docs/screenshots/dashboard-id.png) | ![Grafana](docs/screenshots/grafana.png) |
+| The same dashboard in **Indonesian** | **Grafana**: request rate, p95 latency, status codes, order transitions |
+
+## Architecture
+
+Locally everything runs in Docker Compose. On AWS (CDK in [`infra/`](infra/README.md), not deployed)
+the same containers run on ECS Fargate behind CloudFront.
+
+```mermaid
+flowchart LR
+    browser([Browser])
+    subgraph compose[Docker Compose]
+        web[nginx<br/>React build]
+        api[Django + DRF<br/>gunicorn]
+        db[(PostgreSQL 16)]
+        prom[Prometheus]
+        graf[Grafana]
+    end
+    lm[Lucky Mart API<br/>Go]
+
+    browser --> web
+    web -- /api --> api
+    api --> db
+    api -- low stock, stock in --> lm
+    prom -- scrapes /metrics --> api
+    graf --> prom
+```
+
+```mermaid
+flowchart LR
+    browser([Browser]) --> cf[CloudFront]
+    cf -- "/*" --> s3[(S3<br/>React build)]
+    cf -- "/api/* /admin/* /static/*" --> alb[Load Balancer]
+    subgraph vpc[VPC]
+        alb --> ecs[ECS Fargate<br/>Django]
+        ecs --> rds[(RDS PostgreSQL)]
+    end
+    ecs -. verifies tokens .-> cognito[Cognito<br/>OWNER / STAFF groups]
+    ecs -. reads .-> secrets[Secrets Manager]
+```
+
+## Design decisions
+
+| Decision | Why |
+| --- | --- |
+| Status changes live in one module (`procurement/workflow.py`), not in views | Every rule (who may approve, which status comes next) is in one place and tested directly |
+| Row lock (`select_for_update`) on every status change | Two people clicking "approve" at the same time can't both succeed |
+| Stock sync to Lucky Mart runs after the database transaction commits | A slow or failing Lucky Mart never rolls back a receipt; each line keeps its own sync status and can be retried |
+| A line is never sent to Lucky Mart twice | A retry skips lines already marked `SYNCED`, so stock is not added twice |
+| The creator of an order cannot approve it, even the owner | Simple segregation of duties, like in real procurement |
+| Two authentication classes side by side (Cognito, then Simple JWT) | Local development needs no AWS account; on AWS the same API accepts Cognito access tokens |
+| The frontend hides buttons the user can't use, but the API decides | `lib/orderActions.ts` mirrors the backend rules for a clean UI; the backend tests are the source of truth |
+
+## Project layout
+
+```
+backend/     Django project: accounts (users, roles, Cognito), procurement (orders, workflow, Lucky Mart client)
+frontend/    React + TypeScript app (pages, API hooks, EN/ID dictionaries)
+infra/       AWS CDK stack (TypeScript) and its tests
+monitoring/  Prometheus config and the Grafana dashboard
+docs/        Screenshots
+```
 
 ## Tech stack
 
