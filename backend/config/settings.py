@@ -33,7 +33,8 @@ if not SECRET_KEY:
         raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set when DEBUG is off.")
     SECRET_KEY = "dev-only-insecure-key-do-not-use-in-production"
 
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+# "backend" is the service name Prometheus and nginx use inside Docker Compose.
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,backend")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -53,6 +54,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "django_prometheus.middleware.PrometheusBeforeMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -119,6 +121,14 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+
+# Behind a load balancer (AWS) the original scheme arrives in X-Forwarded-Proto.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

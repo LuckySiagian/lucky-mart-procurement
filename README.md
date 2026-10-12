@@ -4,8 +4,8 @@ An internal portal for restocking my family's grocery store. Staff create purcha
 suppliers, the owner approves them, and when the goods arrive the stock is added to
 [Lucky Mart](https://github.com/LuckySiagian/lucky-mart), the store's ordering platform.
 
-> **Status: work in progress.** The backend and the React frontend work end to end; CI and
-> AWS CDK infrastructure are being built next.
+> **Status: work in progress.** Backend, frontend, CI and monitoring work end to end; the AWS
+> CDK infrastructure code is being written next.
 
 ## How it works
 
@@ -31,10 +31,11 @@ POST /inventory/adjust    ◀───────  add received stock (STOCK_IN
 | --- | --- |
 | Backend | Python 3.12, Django 5, Django REST Framework, Simple JWT |
 | Database | PostgreSQL 16 |
-| Monitoring | `/api/health/`, Prometheus metrics at `/metrics` |
+| Monitoring | `/api/health/`, Prometheus metrics at `/metrics`, Grafana dashboard |
 | Tests | pytest, pytest-django, responses · Vitest, Testing Library |
 | Frontend | React 19 + TypeScript + Vite, TanStack Query, React Router, Tailwind CSS |
-| Infrastructure | Docker Compose; AWS CDK *(planned, code only)* |
+| CI | GitHub Actions: lint, tests, build, Docker images |
+| Infrastructure | Docker Compose, nginx; AWS CDK *(planned, code only)* |
 
 ## Run locally
 
@@ -57,6 +58,23 @@ npm run dev
 - App: http://localhost:5174 (users `owner` and `staff`, password from `DEMO_PASSWORD`)
 - API health: http://localhost:8000/api/health/
 - Django admin: http://localhost:8000/admin (user `owner`)
+
+### Production-like stack and monitoring
+
+```bash
+docker compose --profile app --profile monitoring up -d --build
+```
+
+| Service | URL |
+| --- | --- |
+| App (React build served by nginx, proxying `/api`) | http://localhost:8081 |
+| Prometheus | http://localhost:9090 |
+| Grafana dashboard "Procurement Portal" | http://localhost:3030 |
+
+The dashboard shows request rate, p95 latency, responses by status code, order status changes,
+and stock syncs to Lucky Mart (`procurement_order_transitions_total`, `procurement_stock_sync_total`).
+
+### Lucky Mart connection
 
 To connect to Lucky Mart, run it on port 8080 and set `LUCKY_MART_PHONE_NUMBER` and
 `LUCKY_MART_PASSWORD` in `.env` to a Lucky Mart user with a warehouse role.

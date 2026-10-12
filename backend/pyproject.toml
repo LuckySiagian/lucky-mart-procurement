@@ -2,6 +2,8 @@
 DJANGO_SETTINGS_MODULE = "config.settings"
 python_files = ["test_*.py"]
 addopts = "-q"
+# collectstatic only runs in the Docker image; tests don't need the static folder.
+filterwarnings = ["ignore:No directory at:UserWarning"]
 
 [tool.ruff]
 line-length = 100
